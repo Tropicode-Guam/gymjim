@@ -20,8 +20,8 @@ const Landing = () => {
             setError(`Error fetching classes: ${error.message}`);
         }
     };
-    
-    
+
+
 
     // Use useEffect to fetch classes when the component mounts
     useEffect(() => {

@@ -31,17 +31,28 @@ async function hash(username, password, expires_in_days) {
 }
 
 function authenticate(key) {
+    console.log(`Authenticating key: ${key}`);
     if (connection_hashes[key]) {
         if (expired(key)) {
-            expire_key(key)
-            return false
+            console.log(`Key expired: ${key}`);
+            expire_key(key);
+            return false;
         }
-        return true
+        console.log(`Key authenticated: ${key}`);
+        return true;
     }
-    return false
+    console.log(`Key not found: ${key}`);
+    return false;
+}
+
+
+function comparePassword(password, hash) {
+    console.log(password, hash)
+    return bcrypt.compare(password, hash)
 }
 
 module.exports = {
     hash,
-    authenticate
+    authenticate,
+    comparePassword
 }

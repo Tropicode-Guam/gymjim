@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 
-const API_BASE = process.env.REACT_APP_API
-
 function Admin() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loggedIn, setLoggedIn] = useState('');
-    const [key, setKey] = useState('');
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -14,14 +11,13 @@ function Admin() {
     const [size, setSize] = useState('');
 
     const handleSubmit = async (event) => {
+        console.log("trying to sign in");
         event.preventDefault();
 
-        // Prepare data to be sent in the request
         const credentials = { username, password };
 
         try {
-            // Send a POST request to the /login endpoint
-            const response = await fetch(`${API_BASE}/login`, {
+            const response = await fetch('http://localhost:5000/api/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -29,34 +25,48 @@ function Admin() {
                 body: JSON.stringify(credentials),
             });
 
-            // Check if the request was successful
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Login successful:', data);
-                setLoggedIn(true)
-                setKey(data)
-                setUsername('')
-                setPassword('')
-                // Handle login success (e.g., redirect to another page)
-            } else {
-                console.log('Login failed:', response.status);
-                // Handle errors (e.g., show error message)
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+
+            const data = await response.json();
+            console.log("Login response:", data);
+
+            if (data.connectionHash) {
+                // Store the connectionHash for future requests
+                localStorage.setItem('connectionHash', data.connectionHash);  // or store it in memory
+                // Set loggedIn to true upon successful login
+                setLoggedIn(true);
+            } else {
+                // Handle cases where login is successful but no connectionHash is received
+                console.error('Login successful but no connectionHash received');
+                // setLoggedIn(false); // Or handle as appropriate
+            }
+
         } catch (error) {
-            console.error('Request failed:', error);
-            // Handle network errors (e.g., show error message)
+            console.error('Error during login:', error.message);
+            // Optionally, handle the error, e.g., by showing an error message
+            // setLoggedIn(false);
         }
     };
 
+
     const handleNewClass = async (event) => {
-        event.preventDefault()
+        event.preventDefault();
+
+        // Retrieve the stored connection hash
+        const connectionHash = localStorage.getItem('connectionHash');
 
         const payload = {
-            title, description, date, size, key
-        }
+            title,
+            description,
+            date,
+            size,
+            key: connectionHash  // Use the retrieved connection hash here
+        };
+
         try {
-            // Send a POST request to the /login endpoint
-            const response = await fetch(`${API_BASE}/classes`, {
+            const response = await fetch('http://localhost:5000/api/classes', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -64,28 +74,29 @@ function Admin() {
                 body: JSON.stringify(payload),
             });
 
-            // Check if the request was successful
             if (response.ok) {
                 const data = await response.json();
                 console.log(data);
 
-                setTitle('')
-                setDescription('')
-                // Handle login success (e.g., redirect to another page)
-            } else if (response.status === 401) {
-                console.log('Login key not authorized', response.status);
-                setLoggedIn(false)
-                // Handle errors (e.g., show error message)
+                // Reset form fields after successful submission
+                setTitle('');
+                setDescription('');
+                // Additional logic for success
             } else {
-                console.log('Error posting class', response.status, response.body.text);
+                console.error('Error:', response.status, response.statusText);
+                // Handle different response statuses appropriately
+                if (response.status === 401) {
+                    console.log('Login key not authorized', response.status);
+                    setLoggedIn(false);  // Consider logging out or prompting for re-login
+                }
             }
         } catch (error) {
             console.error('Request failed:', error);
-            // Handle network errors (e.g., show error message)
+            // Handle network or other errors
         }
-    }
+    };
 
-    
+
     // TODO put these in their own components
     if (loggedIn) {
         return (
